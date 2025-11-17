@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flyweight Waaaaaaaaaa :D</title>
+    <link rel="stylesheet" href="style.css" />
+    <style href="./style.css"></style>
+</head>
+
+<body>
+
+    <h2>Flyweight</h2>
+
+    <button onclick="runBenchmark()">Ejecutar Test</button>
+
+    <canvas id="canvas" width="1500" height="700"></canvas>
+
+    <script>
+        /* =====================================================
+              IMPLEMENTACIÓN DEL FLYWEIGHT
+           ===================================================== */
+
+        class TreeFlyweight {
+            constructor(img) {
+                this.img = img;
+            }
+
+            draw(ctx, x, y, scale) {
+                const w = this.img.width * scale;
+                const h = this.img.height * scale;
+                ctx.drawImage(this.img, x - w / 2, y - h, w, h);
+            }
+        }
+
+        class TreeFactory {
+            static flyweight = null;
+
+            static async loadImage(src) {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.src = src;
+
+                    img.onload = () => {
+                        this.flyweight = new TreeFlyweight(img);
+                        resolve(this.flyweight);
+                    };
+
+                    img.onerror = reject;
+                });
+            }
+
+            static getFlyweight() {
+                return this.flyweight;
+            }
+        }
+
+        class Tree {
+            constructor(x, y, scale) {
+                this.x = x;
+                this.y = y + 550;
+                this.scale = scale;
+                this.flyweight = TreeFactory.getFlyweight();
+            }
+
+            draw(ctx) {
+                this.flyweight.draw(ctx, this.x, this.y, this.scale);
+            }
+        }
+
+
+        /* =====================================================
+                 CONFIGURACIÓN DE CANVAS
+           ===================================================== */
+
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+
+        function drawBackground() {
+            ctx.fillStyle = "#a8d0f0";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "#5d8b3c";
+            ctx.fillRect(0, 250, canvas.width, canvas.height - 250);
+        }
+
+
+        /* =====================================================
+                      BENCHMARK DETALLADO
+           ===================================================== */
+
+        async function benchmarkFlyweightDetailed() {
+
+            let results = "tree_number time_ms\n";
+
+            drawBackground();
+
+            const t0 = performance.now();
+
+            for (let i = 1; i <= 100; i++) {
+
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * 100;
+                const scale = 0.3 + Math.random() * 0.7;
+
+                const tree = new Tree(x, y, scale);
+                tree.draw(ctx);
+
+                const t_now = performance.now() - t0;
+
+                results += `${i} ${t_now.toFixed(4)}\n`;
+            }
+
+            return results;
+        }
+
+
+        /* =====================================================
+                   FUNCIÓN PARA DESCARGAR ARCHIVO
+           ===================================================== */
+
+        function downloadFile(filename, text) {
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+            a.download = filename;
+            a.click();
+        }
+
+
+        /* =====================================================
+                        EJECUTAR BENCHMARK
+           ===================================================== */
+
+        async function runBenchmark() {
+
+            await TreeFactory.loadImage("Arbol.png");
+
+            console.log("Iniciando benchmark...");
+
+            const data = await benchmarkFlyweightDetailed();
+
+            downloadFile("flyweight_detailed.dat", data);
+
+            console.log("Benchmark completado. Archivo descargado.");
+        }
+
+    </script>
+
+</body>
+
+</html>
